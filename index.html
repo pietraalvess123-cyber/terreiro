@@ -206,15 +206,15 @@ const save=()=>{try{ST.set(KEY,JSON.stringify(db))}catch(e){alert('Não foi poss
 const nomeM=id=>(db.membros.find(m=>m.id==id)||{}).nome||'—';
 let view='painel',mesSel=hoje().slice(0,7),calSel=hoje().slice(0,7),agFiltro='',cotaSel='',busca='';
 
-const VIEWS=[['painel','Painel'],['membros','Filhos de Santo'],['mens','Mensalidades'],['cotas','Cotas Extras'],['contas','Prestação de Contas'],['cal','Calendário'],['agenda','Agenda'],['galeria','Galeria'],['usuarios','Usuários']];
+const VIEWS=[['painel','Painel'],['membros','Filhos de Santo'],['mens','Mensalidades'],['cotas','Cotas Extras'],['contas','Prestação de Contas'],['cal','Calendário'],['agenda','Agenda'],['galeria','Galeria'],['usuarios','Usuários'],['conta','Minha conta']];
 function go(v){view=v;render()}
-function visiveis(){return VIEWS.filter(([k])=>k=='painel'||(k=='usuarios'?isPai():can(k)))}
+function visiveis(){return VIEWS.filter(([k])=>k=='painel'||k=='conta'||(k=='usuarios'?isPai():can(k)))}
 function render(){
   if(!cur)return;
   if(!visiveis().some(v=>v[0]==view))view='painel';
-  $('#nav').innerHTML=visiveis().map(([k,l])=>`<button class="${k==view?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+(cur.memberId?`<button onclick="perfil('${cur.memberId}')">Meu perfil</button>`:'')+`<span style="margin-left:auto;color:#cfe6d6;font-size:12px;padding:14px 6px;white-space:nowrap">👤 ${esc(cur.nome)}</span>`;
+  $('#nav').innerHTML=visiveis().map(([k,l])=>`<button class="${k==view?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+(cur.memberId?`<button onclick="perfil('${cur.memberId}')">Meu perfil</button>`:'')+`<span onclick="go('conta')" style="margin-left:auto;color:#cfe6d6;font-size:12px;padding:14px 6px;white-space:nowrap;cursor:pointer" title="Minha conta">👤 ${esc(cur.nome)} · <b style="color:#e6c46c">${esc(PAPEL[cur.role]||'')}</b></span>`;
   document.querySelectorAll('.adm').forEach(e=>e.style.display=isPai()?'':'none');
-  $('#app').innerHTML=({painel,membros,mens,cotas,contas,cal,agenda,galeria,usuarios})[view]();applyPerms();
+  $('#app').innerHTML=({painel,membros,mens,cotas,contas,cal,agenda,galeria,usuarios,conta})[view]();applyPerms();
 }
 
 /* ---------- Modal de formulário genérico ---------- */
@@ -501,10 +501,23 @@ function unlock(x){cur=x;try{sessionStorage.setItem('terreiro_ok',x.id)}catch(e)
 function sair(){try{sessionStorage.removeItem('terreiro_ok')}catch(e){}cur=null;showLogin()}
 async function trocaSenha(){const o=prompt('Senha atual:');if(o===null)return;if(await hash(o)!=cur.h){alert('Senha atual incorreta.');return}
   const n=prompt('Nova senha (mínimo 4 caracteres):');if(!n||n.length<4){alert('Senha não alterada.');return}cur.h=await hash(n);save();alert('Senha alterada.')}
+const PAPEL={pai:'Pai/Mãe de santo',tes:'Tesouraria',sec:'Secretaria',filho:'Filho(a) de santo'};
+function conta(){
+  const m=db.membros.find(x=>x.id==cur.memberId),L={none:'Sem acesso',view:'Só visualizar',edit:'Pode editar'};
+  return`<h2>Minha conta</h2>
+  <div class="card"><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">${m?avHtml(m,'big'):''}<div><h3 style="margin:0;font-size:20px">${esc(cur.nome)}</h3><div class="muted">@${esc(cur.u)}</div>
+  <p style="margin:8px 0"><span class="tag ${isPai()?'t-ebo':'t-trab'}">${esc(PAPEL[cur.role]||cur.role)}</span></p>
+  ${m?`<button class="b" onclick="perfil('${m.id}')">Ver meu perfil</button> <button class="b g" onclick="editMembro('${m.id}')">✎ Editar meus dados</button> `:isPai()?'<button class="b" onclick="criaMeuCadastro()">Criar meu cadastro de filho(a) de santo</button> ':'<p class="muted">Seu acesso ainda não está ligado a um cadastro. Peça ao pai de santo.</p>'}
+  <button class="b g" onclick="trocaSenha()">🔑 Trocar senha</button></div></div></div>
+  <div class="card"><h3>O que você pode fazer</h3><table><tr><th>Área</th><th>Permissão</th></tr>${MODS.map(([k,t])=>`<tr><td>${t}</td><td>${L[lvl(k)]}</td></tr>`).join('')}${isPai()?'<tr><td>Usuários e permissões</td><td>Pode editar</td></tr>':''}</table>
+  <p class="muted">Todos podem editar os próprios dados pessoais (nome, nascimento, telefone, endereço, foto e observações).</p></div>`;
+}
+function criaMeuCadastro(){if(!isPai())return;const id=uid();db.membros.push({id,nome:cur.nome,ativo:'sim',iniciado:'nao',cargos:['Pai/Mãe de santo'],mensalidade:db.cfg.mensalidade});cur.memberId=id;save();render();editMembro(id)}
 const MAPF={editMembro:'membros',pagaMens:'mens',desfazMens:'mens',editCota:'cotas',editDespesa:'contas',editAlbum:'galeria'};
 function applyPerms(){
   if(!can('contas'))document.querySelectorAll('#app button[onclick*="go(\'contas\')"]').forEach(e=>e.remove());
   document.querySelectorAll('#app [onclick]').forEach(e=>{const m=(e.getAttribute('onclick')||'').match(/^(\w+)\(/);if(!m)return;
+    if(m[1]=='editMembro'&&cur.memberId&&e.getAttribute('onclick').includes("'"+cur.memberId+"'"))return;
     const mod=m[1]=='editEvento'?(view=='agenda'?'agenda':'cal'):MAPF[m[1]];if(mod&&!can(mod,'edit')){if(e.tagName=='BUTTON')e.remove();else e.removeAttribute('onclick')}});
   document.querySelectorAll('#app a[onclick^="perfil"]').forEach(a=>{const id=(a.getAttribute('onclick').match(/'([^']+)'/)||[])[1];if(!can('membros')&&!(cur.memberId&&cur.memberId==id)){const s=document.createElement('span');s.innerHTML=a.innerHTML;a.replaceWith(s)}});
   if(view=='painel'){

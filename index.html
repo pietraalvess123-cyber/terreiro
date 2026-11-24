@@ -170,21 +170,54 @@ a{color:var(--pri);text-decoration:none;font-weight:600}a:hover{text-decoration:
  .mc{padding:14px 6px 10px}.mc:hover{transform:none}
  dialog{padding:16px;border-radius:16px}
 }
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+header{position:sticky;top:0;z-index:30;padding:8px 16px;gap:10px}
+header .logo{width:60px;height:60px;margin:0}
+.hbtns{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hav{width:40px;height:40px;border-radius:50%;background:linear-gradient(145deg,#2e8b57,#14502a) center/cover no-repeat;border:2px solid var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.dots{font-size:20px;line-height:1;padding:4px 12px!important}
+.menu{position:fixed;top:70px;right:12px;z-index:60;background:#fff;border-radius:14px;box-shadow:0 18px 44px rgba(8,40,20,.35);padding:8px;min-width:230px;max-height:80vh;overflow:auto;animation:pop .18s ease}
+.menu[hidden]{display:none}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;border-radius:9px;font:inherit;cursor:pointer;color:var(--ink)}
+.menu button:hover,.menu button.on{background:#eaf3ea}
+.menu .mh{padding:8px 12px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.menu hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+body{padding-bottom:90px}
+body.locked #bbar,body.locked .menu{display:none}
+#bbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(0deg,rgba(242,245,238,.98),rgba(242,245,238,.8));pointer-events:none}
+#bbar .bi{display:flex;gap:4px;background:#fff;border-radius:22px;box-shadow:0 10px 30px rgba(8,40,20,.22);padding:6px;width:min(520px,100%);pointer-events:auto}
+#bbar button{flex:1;border:0;background:none;border-radius:16px;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;font-size:11px;font-weight:600;color:var(--mut);transition:background .15s}
+#bbar button .ic{font-size:20px;height:24px;display:flex;align-items:center}
+#bbar button.on{background:#e8f3e9;color:var(--pri)}
+.sdot{display:inline-block;width:20px;height:20px;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.07)}
+.sdot.ok{background:var(--ok)}.sdot.bad{background:var(--bad)}.sdot.gray{background:#b5bdb7}
+@media(max-width:640px){header{padding:calc(6px + env(safe-area-inset-top)) 10px 6px}header .logo{width:48px;height:48px}header h1{font-size:15px;flex:1 1 40%}.hbtns{gap:6px}header .hbtns .b{padding:6px 9px}}
+@media print{#bbar,.menu,header{display:none!important}}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.cc{cursor:pointer;margin:0}.cc:hover{box-shadow:var(--sh2);transform:translateY(-2px)}.cc ul{margin:6px 0;padding-left:18px}.cc p{margin:6px 0}
+body{background-attachment:scroll}
+#login{align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.lbox{margin:auto}
+#bbar .mobonly{display:none}
+@media(max-width:640px){header{position:static}#bbar .mobonly{display:flex}.menu{max-height:70vh}}
+.af{border-left:5px solid var(--gold)}.af.done{border-left-color:var(--ok);background:#f7fbf6}
+.rbox{background:#f4f8f3;border:1px dashed #c9d9c8;border-radius:12px;padding:10px 12px;margin:10px 0}
+ul.chk{list-style:none;padding:0;margin:8px 0}.chk label{font-weight:400;font-size:14px;color:inherit;margin:0;display:flex;gap:8px;align-items:flex-start}
+#bbar .ic{position:relative}.bdg{position:absolute;top:-4px;right:-12px;background:var(--bad);color:#fff;font-size:10px;font-weight:700;border-radius:9px;padding:0 5px;line-height:15px}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{.card{box-shadow:none;border:0}#app>*{animation:none}.mc::after{display:none}}
 </style>
 </head>
 <body>
 <header><div class="logo" id="logo" title="Símbolo do terreiro"></div>
 <h1>Ilê Asé Tonin Ewe Oya<small>Gestão do terreiro · filhos de santo · finanças · agenda</small></h1>
-<button class="b g s" onclick="trocaSenha()">🔑 Trocar senha</button>
-<button class="b g s" onclick="sair()">Sair</button>
-<button class="b g s adm" onclick="backup()">⬇ Backup</button>
-<button class="b g s adm" onclick="document.getElementById('imp').click()">⬆ Restaurar</button>
+<div class="hbtns"><button class="b g s" onclick="trocaSenha()">🔑 Trocar senha</button>
+<button class="b g s" onclick="meuPerfil()">Meu perfil</button><div class="hav" id="hav" onclick="meuPerfil()" title="Meu perfil"></div>
+<button class="b g s dots" onclick="toggleMenu(event)" title="Mais opções">⋮</button></div>
 <input id="imp" type="file" accept=".json" hidden onchange="restore(this)"></header>
-<nav id="nav"></nav>
+<div id="menu" class="menu" hidden></div>
+
 <main id="app"></main>
 <dialog id="dlg"></dialog>
+<div id="bbar"></div>
 <div id="login" style="display:none"></div>
 
 <script>
@@ -206,15 +239,34 @@ const save=()=>{try{ST.set(KEY,JSON.stringify(db))}catch(e){alert('Não foi poss
 const nomeM=id=>(db.membros.find(m=>m.id==id)||{}).nome||'—';
 let view='painel',mesSel=hoje().slice(0,7),calSel=hoje().slice(0,7),agFiltro='',cotaSel='',busca='';
 
-const VIEWS=[['painel','Painel'],['membros','Filhos de Santo'],['mens','Mensalidades'],['cotas','Cotas Extras'],['contas','Prestação de Contas'],['cal','Calendário'],['agenda','Agenda'],['galeria','Galeria'],['usuarios','Usuários'],['conta','Minha conta']];
+const VIEWS=[['painel','Painel'],['membros','Filhos de Santo'],['mens','Mensalidades'],['cotas','Cotas Extras'],['contas','Prestação de Contas'],['cal','Calendário'],['agenda','Agenda'],['galeria','Galeria'],['ebos','Ebós'],['bori','Bori'],['folhas','Folhas'],['funcao','Funções'],['afazeres','Afazeres'],['usuarios','Usuários'],['conta','Minha conta']];
 function go(v){view=v;render()}
-function visiveis(){return VIEWS.filter(([k])=>k=='painel'||k=='conta'||(k=='usuarios'?isPai():can(k)))}
+function visiveis(){return VIEWS.filter(([k])=>k=='painel'||k=='conta'||k=='afazeres'||(k=='usuarios'?isPai():can(k)))}
+const ICON={painel:'🏠',membros:'👥',mens:'💰',cotas:'🎁',contas:'📊',cal:'📅',agenda:'📖',galeria:'🖼',usuarios:'🔑',conta:'👤',ebos:'🧺',bori:'🥥',folhas:'🌿',funcao:'📋',afazeres:'✅'};
+function mensStatus(){const m=db.membros.find(x=>x.id==cur.memberId);if(!m||m.ativo=='nao')return{c:'gray',t:'Sem cadastro de mensalidade'};
+  const r=(db.mens[hoje().slice(0,7)]||{})[m.id];return r&&r.pago?{c:'ok',t:'Em dia',r,m}:{c:'bad',t:'Pendente',m}}
+function meuPerfil(){if(cur.memberId)perfil(cur.memberId);else go('conta')}
+function mostraMens(){const s=mensStatus(),mes=hoje().slice(0,7);
+  $('#dlg').innerHTML=`<div style="text-align:center"><div class="sdot ${s.c}" style="width:64px;height:64px;margin:0 auto 12px"></div><h2 style="text-align:center">Mensalidade de ${MESES[+mes.slice(5)-1]}</h2>
+  <p style="font-size:20px;font-weight:700;margin:4px 0" class="${s.c=='ok'?'ok':s.c=='bad'?'bad':'muted'}">${s.t}</p>
+  ${s.m?`<p class="muted">Valor: ${brl(s.m.mensalidade||db.cfg.mensalidade)}${s.r?' · pago em '+fd(s.r.data):''}</p>`:'<p class="muted">Sua conta ainda não está ligada ao seu cadastro. Peça ao pai de santo.</p>'}</div>
+  <div class="row" style="margin-top:14px">${can('mens')?'<button class="b" onclick="$(\'#dlg\').close();go(\'mens\')">Ver mensalidades</button>':''}<button class="b g" onclick="$('#dlg').close()">Fechar</button></div>`;$('#dlg').showModal()}
+function closeMenu(){const m=$('#menu');if(m)m.hidden=true}
+function toggleMenu(e,bar){e.stopPropagation();const mn=$('#menu');if(!mn.hidden){mn.hidden=true;return}
+  mn.innerHTML=`<div class="mh">👤 <b>${esc(cur.nome)}</b><br><span class="muted">${esc(PAPEL[cur.role]||'')}</span></div>`+visiveis().map(([k,l])=>`<button class="${k==view?'on':''}" onclick="go('${k}');closeMenu()">${ICON[k]||'•'} ${l}</button>`).join('')+'<hr>'+(isPai()?'<button onclick="closeMenu();backup()">⬇ Backup</button><button onclick="closeMenu();document.getElementById(\'imp\').click()">⬆ Restaurar</button>':'')+'<button onclick="closeMenu();sair()">⏻ Sair</button>';
+  if(bar){mn.style.top='auto';mn.style.bottom='92px'}else{mn.style.bottom='auto';mn.style.top=Math.max($('header').getBoundingClientRect().bottom,0)+6+'px'}mn.hidden=false}
+document.addEventListener('click',e=>{if(!e.target.closest('#menu'))closeMenu()});
+function chrome(){
+  const m=db.membros.find(x=>x.id==cur.memberId),av=$('#hav');
+  av.style.backgroundImage=m&&m.foto?`url(${m.foto})`:'';av.textContent=m&&m.foto?'':(cur.nome.trim()[0]||'?').toUpperCase();
+  const s=mensStatus(),it=[['painel','🏠','Início']];if(can('cal'))it.push(['cal','📅','Calendário']);if(can('agenda'))it.push(['agenda','📖','Agenda']);it.push(['afazeres','✅','Afazeres',nAf()]);
+  $('#bbar').innerHTML='<div class="bi">'+it.map(([k,i,l,b])=>`<button class="${k==view?'on':''}" onclick="go('${k}')"><span class="ic">${i}${b?`<span class="bdg">${b}</span>`:''}</span>${l}</button>`).join('')+`<button onclick="mostraMens()"><span class="ic"><span class="sdot ${s.c}"></span></span>Mensalidade</button><button class="mobonly" onclick="toggleMenu(event,1)"><span class="ic">⋮</span>Menu</button></div>`;
+}
 function render(){
   if(!cur)return;
   if(!visiveis().some(v=>v[0]==view))view='painel';
-  $('#nav').innerHTML=visiveis().map(([k,l])=>`<button class="${k==view?'on':''}" onclick="go('${k}')">${l}</button>`).join('')+(cur.memberId?`<button onclick="perfil('${cur.memberId}')">Meu perfil</button>`:'')+`<span onclick="go('conta')" style="margin-left:auto;color:#cfe6d6;font-size:12px;padding:14px 6px;white-space:nowrap;cursor:pointer" title="Minha conta">👤 ${esc(cur.nome)} · <b style="color:#e6c46c">${esc(PAPEL[cur.role]||'')}</b></span>`;
-  document.querySelectorAll('.adm').forEach(e=>e.style.display=isPai()?'':'none');
-  $('#app').innerHTML=({painel,membros,mens,cotas,contas,cal,agenda,galeria,usuarios,conta})[view]();applyPerms();
+  chrome();
+  $('#app').innerHTML=({painel,membros,mens,cotas,contas,cal,agenda,galeria,usuarios,conta,ebos,bori,folhas,funcao,afazeres})[view]();applyPerms();
 }
 
 /* ---------- Modal de formulário genérico ---------- */
@@ -465,7 +517,7 @@ function backup(){const a=document.createElement('a');a.href=URL.createObjectURL
 function restore(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.membros)throw 0;if(confirm('Substituir todos os dados atuais pelo backup?')){d.users=d.users||db.users;db=d;save();sair()}}catch(e){alert('Arquivo inválido.')}};r.readAsText(f);inp.value=''}
 /* ---------- Usuários, login e permissões ---------- */
 const AK='terreiro_auth_v1';
-const MODS=[['membros','Filhos de Santo'],['mens','Mensalidades'],['cotas','Cotas Extras'],['contas','Prestação de Contas'],['cal','Calendário'],['agenda','Agenda'],['galeria','Galeria'],['orunko','Orunkó (dado privado)']];
+const MODS=[['membros','Filhos de Santo'],['mens','Mensalidades'],['cotas','Cotas Extras'],['contas','Prestação de Contas'],['cal','Calendário'],['agenda','Agenda'],['galeria','Galeria'],['ebos','Ebós'],['bori','Bori'],['folhas','Folhas'],['funcao','Funções (presença)'],['afazeres','Afazeres (ver e editar os de todos)'],['orunko','Orunkó (dado privado)']];
 const RANK={none:0,view:1,edit:2};
 const PRESETS={
   pai:{nome:'Pai/Mãe de santo (acesso total)',p:Object.fromEntries(MODS.map(([k])=>[k,'edit']))},
@@ -497,10 +549,101 @@ function showLogin(modo,msg){
       const n={id:uid(),nome:f.get('nome').trim(),u,h:await hash(p),role:first?'pai':'filho',status:first?'ativo':'pendente',memberId:f.get('mid')||'',perms:clone(PRESETS[first?'pai':'filho'].p)};
       users().push(n);save();if(first)unlock(n);else showLogin('entrar','Conta criada! Aguarde o pai de santo aprovar o seu acesso.')}};
 }
-function unlock(x){cur=x;try{sessionStorage.setItem('terreiro_ok',x.id)}catch(e){}$('#login').style.display='none';document.body.classList.remove('locked');render()}
+function unlock(x){cur=x;view='painel';try{sessionStorage.setItem('terreiro_ok',x.id)}catch(e){}$('#login').style.display='none';document.body.classList.remove('locked');render()}
 function sair(){try{sessionStorage.removeItem('terreiro_ok')}catch(e){}cur=null;showLogin()}
 async function trocaSenha(){const o=prompt('Senha atual:');if(o===null)return;if(await hash(o)!=cur.h){alert('Senha atual incorreta.');return}
   const n=prompt('Nova senha (mínimo 4 caracteres):');if(!n||n.length<4){alert('Senha não alterada.');return}cur.h=await hash(n);save();alert('Senha alterada.')}
+/* ---------- Ebós, Bori, Folhas (catálogos restritos) ---------- */
+const cbusca={};
+const CAT={
+  ebos:{db:'ebos',titulo:'Ebós',icone:'🧺',novo:'Novo ebó',campos:()=>[{k:'nome',l:'Nome do ebó',req:1},{k:'orixa',l:'Orixá / finalidade'},{k:'para',l:'Para quem (filho de santo / consulente)'},{k:'data',l:'Data',t:'date'},{k:'itens',l:'Itens do ebó (um por linha)',t:'textarea'},{k:'obs',l:'Modo de fazer / observações',t:'textarea'}],
+    sub:x=>`<div class="muted">${[x.orixa,x.para&&'para '+x.para,x.data&&fd(x.data)].filter(Boolean).map(esc).join(' · ')}</div>`},
+  bori:{db:'boris',titulo:'Bori',icone:'🥥',novo:'Novo bori',campos:()=>[{k:'nome',l:'Título (ex.: Bori de Ana)',req:1},{k:'filho',l:'Filho(a) de santo',t:'select',o:[['','— não vinculado —'],...db.membros.map(m=>[m.id,m.nome])]},{k:'data',l:'Data',t:'date'},{k:'itens',l:'O que vai na mesa de bori (um item por linha)',t:'textarea'},{k:'obs',l:'Observações',t:'textarea'}],
+    sub:x=>`<div class="muted">${[x.filho&&nomeM(x.filho),x.data&&fd(x.data)].filter(Boolean).map(esc).join(' · ')}</div>`},
+  folhas:{db:'folhas',titulo:'Folhas',icone:'🌿',novo:'Nova folha',campos:()=>[{k:'nome',l:'Nome da folha',req:1},{k:'ioruba',l:'Nome em iorubá'},{k:'orixa',l:'Orixá(s)'},{k:'uso',l:'Para que serve / uso',t:'textarea'},{k:'obs',l:'Observações',t:'textarea'}],
+    sub:x=>`<div class="muted">${[x.ioruba,x.orixa].filter(Boolean).map(esc).join(' · ')}</div>${x.uso?`<p>${esc(x.uso)}</p>`:''}`}
+};
+function catLista(key){
+  const C=CAT[key],l=db[C.db]=db[C.db]||[],q=(cbusca[key]||'').toLowerCase();
+  const r=l.filter(x=>JSON.stringify(x).toLowerCase().includes(q)).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  return`<h2>${C.icone} ${C.titulo}</h2><div class="tools"><input placeholder="Buscar…" value="${esc(cbusca[key]||'')}" oninput="cbusca['${key}']=this.value;render();const i=$('.tools input');i.focus();i.setSelectionRange(99,99)"><button class="b" onclick="editCat('${key}')">+ ${C.novo}</button></div>
+  <div class="cgrid">${r.map(x=>`<div class="card cc" onclick="editCat('${key}','${x.id}')"><h3>${esc(x.nome)}</h3>${C.sub(x)}${x.itens?`<ul>${x.itens.split('\n').filter(s=>s.trim()).map(s=>`<li>${esc(s.trim())}</li>`).join('')}</ul>`:''}${x.obs?`<p class="muted">${esc(x.obs)}</p>`:''}</div>`).join('')||'<p class="muted">Nada cadastrado ainda.</p>'}</div>`;
+}
+const ebos=()=>catLista('ebos'),bori=()=>catLista('bori'),folhas=()=>catLista('folhas');
+function editCat(key,id){if(!need(key))return;const C=CAT[key],l=db[C.db]=db[C.db]||[],x=l.find(y=>y.id==id);
+  form(x?'Editar':C.novo,C.campos(),x,o=>{if(x)Object.assign(x,o);else l.push({id:uid(),...o})},x&&(()=>{db[C.db]=l.filter(y=>y.id!=id)}))}
+/* ---------- Funções e assiduidade ---------- */
+$('#dlg').addEventListener('close',()=>{$('#dlg').style.width=''});
+function dias(a,b){const r=[];if(!a)return r;const p=n=>String(n).padStart(2,'0'),d=new Date(a+'T12:00:00'),e=new Date((b||a)+'T12:00:00');for(let i=0;i<60&&d<=e;i++){r.push(d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()));d.setDate(d.getDate()+1)}return r}
+const ativosM=()=>db.membros.filter(m=>m.ativo!='nao').sort((a,b)=>a.nome.localeCompare(b.nome));
+function presM(f,mid){const dd=dias(f.ini,f.fim),pm=(f.pres||{})[mid]||{};return dd.filter(d=>pm[d]).length}
+function funcao(){
+  const fs=(db.funcoes=db.funcoes||[]).slice().sort((a,b)=>b.ini.localeCompare(a.ini)),at=ativosM();
+  const tot=fs.reduce((s,f)=>s+dias(f.ini,f.fim).length,0);
+  const rows=at.map(m=>{const p=fs.reduce((s,f)=>s+presM(f,m.id),0);return{m,p,pct:tot?Math.round(p*100/tot):0}}).sort((a,b)=>b.pct-a.pct||a.m.nome.localeCompare(b.m.nome));
+  const cor=p=>p>=75?'var(--ok)':p>=50?'var(--gold)':'var(--bad)';
+  return`<h2>Funções e Assiduidade</h2><p class="muted">Funções são os atos em que todos devem estar presentes no barracão, de um ou de vários dias.</p><div class="tools"><button class="b" onclick="editFuncao()">+ Nova função</button></div>
+  ${fs.map(f=>{const dd=dias(f.ini,f.fim),pres=at.reduce((s,m)=>s+presM(f,m.id),0),poss=dd.length*at.length;return`<div class="card"><div class="row"><div><h3 style="margin:0">${esc(f.nome)}</h3><div class="muted">📅 ${fd(f.ini)}${f.fim&&f.fim!=f.ini?' a '+fd(f.fim):''} · ${dd.length} dia${dd.length>1?'s':''}${f.obs?' · '+esc(f.obs):''}</div></div><div style="text-align:right"><b style="font-size:20px">${poss?Math.round(pres*100/poss):0}%</b> <span class="muted">de presença</span></div></div>
+  <div style="margin-top:8px"><button class="b s" onclick="presFuncao('${f.id}')">Marcar presença</button> <button class="b g s" onclick="editFuncao('${f.id}')">Editar</button></div></div>`}).join('')||'<p class="muted">Nenhuma função cadastrada.</p>'}
+  <div class="card" style="overflow:auto"><h3>Assiduidade dos filhos de santo</h3>${tot?`<table><tr><th>Nome</th><th>Presenças</th><th>Assiduidade</th></tr>${rows.map(r=>`<tr><td>${esc(r.m.nome)}</td><td>${r.p}/${tot} dias</td><td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e8efe7;border-radius:8px;height:10px"><div style="width:${r.pct}%;height:100%;border-radius:8px;background:${cor(r.pct)}"></div></div><b>${r.pct}%</b></div></td></tr>`).join('')}</table>`:'<p class="muted">Cadastre funções e marque as presenças para ver a assiduidade.</p>'}</div>`;
+}
+function editFuncao(id){if(!need('funcao'))return;const l=db.funcoes=db.funcoes||[],x=l.find(y=>y.id==id);
+  form(x?'Editar função':'Nova função',[{k:'nome',l:'Nome da função',req:1},{k:'ini',l:'Primeiro dia',t:'date',req:1},{k:'fim',l:'Último dia (deixe vazio se for um dia só)',t:'date'},{k:'obs',l:'Observações'}],x,
+   o=>{if(!o.fim||o.fim<o.ini)o.fim=o.ini;if(x)Object.assign(x,o);else l.push({id:uid(),pres:{},...o})},x&&(()=>{db.funcoes=l.filter(y=>y.id!=id)}))}
+function presFuncao(id){if(!need('funcao'))return;const f=db.funcoes.find(x=>x.id==id),dd=dias(f.ini,f.fim),at=ativosM();
+  $('#dlg').style.width='min(900px,96vw)';
+  $('#dlg').innerHTML=`<h2>${esc(f.nome)} — presença</h2><p class="muted">Marque quem esteve presente em cada dia. Salva automaticamente.</p><div style="overflow:auto"><table class="mx"><tr><th>Filho(a) de santo</th>${dd.map(d=>`<th>${d.slice(8)}/${d.slice(5,7)}<br><button class="b g s" style="padding:1px 6px" onclick="presCol('${f.id}','${d}')" title="Marcar todos presentes neste dia">✔ todos</button></th>`).join('')}<th>Total</th></tr>
+  ${at.map(m=>`<tr><td>${esc(m.nome)}</td>${dd.map(d=>`<td><input type="checkbox" style="width:20px;height:20px" ${((f.pres||{})[m.id]||{})[d]?'checked':''} onchange="presMark('${f.id}','${m.id}','${d}',this.checked)"></td>`).join('')}<td><b id="pc-${m.id}">${presM(f,m.id)}/${dd.length}</b></td></tr>`).join('')}</table></div>
+  <div style="margin-top:12px"><button class="b" onclick="$('#dlg').close();render()">Concluir</button></div>`;$('#dlg').showModal()}
+function presMark(fid,mid,d,v){if(!need('funcao'))return;const f=db.funcoes.find(x=>x.id==fid);f.pres=f.pres||{};(f.pres[mid]=f.pres[mid]||{})[d]=v;save();const c=document.getElementById('pc-'+mid);if(c)c.textContent=presM(f,mid)+'/'+dias(f.ini,f.fim).length}
+function presCol(fid,d){const f=db.funcoes.find(x=>x.id==fid);f.pres=f.pres||{};ativosM().forEach(m=>(f.pres[m.id]=f.pres[m.id]||{})[d]=true);save();presFuncao(fid)}
+/* ---------- Afazeres ---------- */
+let afFiltro='hoje';
+const linhasT=s=>String(s||'').split('\n').map(x=>x.trim()).filter(Boolean);
+function refInfo(t){
+  if(t.tipo=='ebos'){const e=(db.ebos||[]).find(x=>x.id==t.ref);return e?{nome:'Ebó: '+e.nome,sub:[e.orixa,e.para&&'para '+e.para].filter(Boolean).join(' · '),itens:linhasT(e.itens),obs:e.obs}:{nome:'Ebó removido da página de ebós',itens:[]}}
+  if(t.tipo=='bori'){const b=(db.boris||[]).find(x=>x.id==t.ref);return b?{nome:'Bori: '+b.nome,sub:b.filho?nomeM(b.filho):'',itens:linhasT(b.itens),obs:b.obs}:{nome:'Bori removido da página de bori',itens:[]}}
+  return null}
+const meuAf=t=>!!cur.memberId&&(t.resp||[]).includes(cur.memberId);
+const podeAf=t=>isPai()||can('afazeres','edit')||meuAf(t);
+function visAf(){const l=db.afazeres=db.afazeres||[];return can('afazeres')?l:l.filter(meuAf)}
+function nAf(){const h=hoje();return(db.afazeres||[]).filter(t=>meuAf(t)&&!t.done&&t.data<=h).length||''}
+function afazeres(){
+  const h=hoje(),l=visAf(),F={hoje:t=>t.data==h||(!t.done&&t.data<h),prox:t=>!t.done&&t.data>h,conc:t=>t.done};
+  const n=k=>l.filter(F[k]).length,r=l.filter(F[afFiltro]).sort((a,b)=>(a.done-b.done)||a.data.localeCompare(b.data));
+  const chip=(k,t)=>`<button class="b ${afFiltro==k?'':'g'}" onclick="afFiltro='${k}';render()">${t} (${n(k)})</button>`;
+  return`<h2>✅ Afazeres</h2><p class="muted">${can('afazeres')?'Tudo o que há para fazer na casa.':'Aqui aparecem os afazeres designados para você.'}</p>
+  <div class="tools">${chip('hoje','Hoje')}${chip('prox','Próximos')}${chip('conc','Concluídos')}<span style="flex:1"></span><button class="b" onclick="editAfazer()">+ Novo afazer</button></div>
+  ${r.map(t=>{const ri=refInfo(t),pode=podeAf(t),atras=!t.done&&t.data<h;
+    return`<div class="card af ${t.done?'done':''}"><div class="row"><div><h3 style="margin:0">${esc(t.titulo)}</h3><div class="muted">📅 ${fd(t.data)}${atras?' <b class="bad">· atrasado</b>':''}<br>👥 ${(t.resp||[]).map(x=>esc(nomeM(x))).join(', ')||'<i>sem responsável</i>'}</div></div>
+    <div style="text-align:right">${t.done?'<span class="tag" style="background:var(--ok)">✔ Concluído</span>':'<span class="tag" style="background:var(--gold)">Pendente</span>'}</div></div>
+    ${ri?`<div class="rbox"><b>${esc(ri.nome)}</b>${ri.sub?` <span class="muted">${esc(ri.sub)}</span>`:''}${ri.itens.length?`<ul class="chk">${ri.itens.map((it,i)=>`<li><label><input type="checkbox" style="width:auto" ${t.chk&&t.chk[i]?'checked':''} ${pode&&!t.done?'':'disabled'} onchange="chkAfazer('${t.id}',${i},this.checked)"> ${esc(it)}</label></li>`).join('')}</ul>`:'<p class="muted">Sem itens cadastrados.</p>'}${ri.obs?`<p class="muted">${esc(ri.obs)}</p>`:''}</div>`:''}
+    ${t.obs?`<p>${esc(t.obs)}</p>`:''}
+    ${t.done?`<p class="muted">Concluído por <b>${esc(t.doneBy)}</b> em ${fd(t.doneAt)}${isPai()?' — aguardando a sua conferência':''}</p>`:''}
+    <div style="margin-top:8px">${!t.done&&pode?`<button class="b s" onclick="concluiAfazer('${t.id}')">✔ Marcar como concluído</button> `:''}${t.done&&isPai()?`<button class="b s" onclick="delAfazer('${t.id}')">✔ Conferido — apagar</button> `:''}${t.done?`<button class="b g s" onclick="reabreAfazer('${t.id}')">Reabrir</button> `:''}<button class="b g s" onclick="editAfazer('${t.id}')">Editar</button></div></div>`}).join('')||'<p class="muted">Nenhum afazer aqui.</p>'}`;
+}
+function editAfazer(id){if(!need('afazeres'))return;const l=db.afazeres=db.afazeres||[],t=l.find(x=>x.id==id)||{};
+  $('#dlg').innerHTML=`<h2>${id?'Editar afazer':'Novo afazer'}</h2><form id="f">
+  <label>Título<input name="titulo" value="${esc(t.titulo)}" placeholder="Ex.: Cozinhar o ebó"></label>
+  <label>Data<input name="data" type="date" value="${t.data||hoje()}" required></label>
+  <label>Tipo<select name="tipo"><option value="livre">Tarefa livre</option><option value="ebos">Ebó (puxa os itens da página de ebós)</option><option value="bori">Bori (puxa a mesa da página de bori)</option></select></label>
+  <label id="lref">Qual?<select name="ref"></select></label>
+  <label>Quem vai fazer</label><div style="max-height:150px;overflow:auto;border:1px solid var(--line);padding:8px;border-radius:10px;margin-bottom:10px">${ativosM().map(m=>`<div><label style="margin:0;color:inherit;font-weight:400"><input type="checkbox" style="width:auto" name="resp" value="${m.id}" ${(t.resp||[]).includes(m.id)?'checked':''}> ${esc(m.nome)}</label></div>`).join('')||'<span class="muted">Sem cadastros.</span>'}</div>
+  <label>Observações<textarea name="obs" rows="2">${esc(t.obs)}</textarea></label>
+  <div class="row"><button class="b">Salvar</button><button class="b g" type="button" onclick="$('#dlg').close()">Cancelar</button>${id&&isPai()?'<button class="b r" type="button" id="del">Excluir</button>':''}</div></form>`;
+  const F=$('#f'),fill=()=>{const tp=F.tipo.value;$('#lref').style.display=tp=='livre'?'none':'';const src=tp=='ebos'?(db.ebos||[]):tp=='bori'?(db.boris||[]):[];F.ref.innerHTML=src.map(x=>`<option value="${x.id}" ${x.id==t.ref?'selected':''}>${esc(x.nome)}</option>`).join('')||'<option value="">(nada cadastrado)</option>'};
+  F.tipo.value=t.tipo||'livre';F.tipo.onchange=fill;fill();
+  F.onsubmit=e=>{e.preventDefault();const fm=new FormData(F),tp=fm.get('tipo'),ref=tp=='livre'?'':fm.get('ref');
+    if(tp!='livre'&&!ref){alert('Cadastre primeiro o '+(tp=='ebos'?'ebó':'bori')+' na página correspondente.');return}
+    let ti=fm.get('titulo').trim();if(!ti){const ri=refInfo({tipo:tp,ref});ti=ri?'Fazer '+ri.nome.replace(/^(Ebó|Bori): /,m=>m=='Ebó: '?'ebó: ':'bori: '):'Afazer'}
+    const o={titulo:ti,data:fm.get('data'),tipo:tp,ref,resp:fm.getAll('resp'),obs:fm.get('obs')};if(t.ref!=ref)o.chk={};
+    if(id)Object.assign(t,o);else l.push({id:uid(),done:false,chk:{},...o});save();$('#dlg').close();render()};
+  if(id&&isPai())$('#del').onclick=()=>{if(confirm('Excluir este afazer?')){db.afazeres=l.filter(x=>x.id!=id);save();$('#dlg').close();render()}};
+  $('#dlg').showModal()}
+function concluiAfazer(id){const t=db.afazeres.find(x=>x.id==id);if(!podeAf(t)){alert('Só o responsável pode concluir este afazer.');return}t.done=true;t.doneBy=cur.nome;t.doneAt=hoje();save();render()}
+function reabreAfazer(id){if(!(isPai()||can('afazeres','edit')))return;const t=db.afazeres.find(x=>x.id==id);t.done=false;delete t.doneBy;delete t.doneAt;save();render()}
+function delAfazer(id){if(!isPai())return;const t=db.afazeres.find(x=>x.id==id);if(confirm('Você conferiu que "'+t.titulo+'" foi feito? Ele será apagado.')){db.afazeres=db.afazeres.filter(x=>x.id!=id);save();render()}}
+function chkAfazer(id,i,v){const t=db.afazeres.find(x=>x.id==id);if(!podeAf(t)||t.done)return;t.chk=t.chk||{};t.chk[i]=v;save()}
 const PAPEL={pai:'Pai/Mãe de santo',tes:'Tesouraria',sec:'Secretaria',filho:'Filho(a) de santo'};
 function conta(){
   const m=db.membros.find(x=>x.id==cur.memberId),L={none:'Sem acesso',view:'Só visualizar',edit:'Pode editar'};
@@ -513,12 +656,12 @@ function conta(){
   <p class="muted">Todos podem editar os próprios dados pessoais (nome, nascimento, telefone, endereço, foto e observações).</p></div>`;
 }
 function criaMeuCadastro(){if(!isPai())return;const id=uid();db.membros.push({id,nome:cur.nome,ativo:'sim',iniciado:'nao',cargos:['Pai/Mãe de santo'],mensalidade:db.cfg.mensalidade});cur.memberId=id;save();render();editMembro(id)}
-const MAPF={editMembro:'membros',pagaMens:'mens',desfazMens:'mens',editCota:'cotas',editDespesa:'contas',editAlbum:'galeria'};
+const MAPF={editMembro:'membros',pagaMens:'mens',desfazMens:'mens',editCota:'cotas',editDespesa:'contas',editAlbum:'galeria',editFuncao:'funcao',presFuncao:'funcao',editAfazer:'afazeres',reabreAfazer:'afazeres'};
 function applyPerms(){
   if(!can('contas'))document.querySelectorAll('#app button[onclick*="go(\'contas\')"]').forEach(e=>e.remove());
   document.querySelectorAll('#app [onclick]').forEach(e=>{const m=(e.getAttribute('onclick')||'').match(/^(\w+)\(/);if(!m)return;
     if(m[1]=='editMembro'&&cur.memberId&&e.getAttribute('onclick').includes("'"+cur.memberId+"'"))return;
-    const mod=m[1]=='editEvento'?(view=='agenda'?'agenda':'cal'):MAPF[m[1]];if(mod&&!can(mod,'edit')){if(e.tagName=='BUTTON')e.remove();else e.removeAttribute('onclick')}});
+    const mod=m[1]=='editCat'?(e.getAttribute('onclick').match(/'([^']+)'/)||[])[1]:m[1]=='editEvento'?(view=='agenda'?'agenda':'cal'):MAPF[m[1]];if(mod&&!can(mod,'edit')){if(e.tagName=='BUTTON')e.remove();else e.removeAttribute('onclick')}});
   document.querySelectorAll('#app a[onclick^="perfil"]').forEach(a=>{const id=(a.getAttribute('onclick').match(/'([^']+)'/)||[])[1];if(!can('membros')&&!(cur.memberId&&cur.memberId==id)){const s=document.createElement('span');s.innerHTML=a.innerHTML;a.replaceWith(s)}});
   if(view=='painel'){
     if(!can('mens')){document.querySelectorAll('#app .card.stat').forEach(e=>e.remove());document.querySelectorAll('#app .card h3').forEach(h=>{if(h.textContent.startsWith('Mensalidades pendentes'))h.parentElement.remove()})}

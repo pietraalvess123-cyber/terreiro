@@ -1,0 +1,22 @@
+{
+  "_aviso": "Lista de Orixás e das cores que os representam (máximo de 2 cores por Orixá, em hexadecimal). Pode ser editada: o app usa esta lista no perfil e no fio de contas ao redor da foto.",
+  "orixas": [
+    { "nome": "Exu", "cores": ["#c0392b", "#111111"] },
+    { "nome": "Ogum", "cores": ["#1f3a93"] },
+    { "nome": "Oxóssi", "cores": ["#1fa2c8"] },
+    { "nome": "Obaluaiê", "cores": ["#1a1a1a", "#ffffff"] },
+    { "nome": "Ossain", "cores": ["#2e8b57", "#ffffff"] },
+    { "nome": "Oxumarê", "cores": ["#2e8b57", "#f1c40f"] },
+    { "nome": "Xangô", "cores": ["#c0392b", "#ffffff"] },
+    { "nome": "Logunedé", "cores": ["#1fa2c8", "#f1c40f"] },
+    { "nome": "Oyá (Iansã)", "cores": ["#b3202a", "#7b3f00"] },
+    { "nome": "Obá", "cores": ["#b3202a", "#f4a6b0"] },
+    { "nome": "Ewá", "cores": ["#e75480", "#f1c40f"] },
+    { "nome": "Oxum", "cores": ["#e0a800"] },
+    { "nome": "Iemanjá", "cores": ["#6ec6e8", "#ffffff"] },
+    { "nome": "Nanã", "cores": ["#7d3c98", "#ffffff"] },
+    { "nome": "Oxalá", "cores": ["#ffffff", "#b0bec5"] },
+    { "nome": "Ibeji", "cores": ["#f48fb1", "#64b5f6"] },
+    { "nome": "Iroko (Tempo)", "cores": ["#ffffff", "#2e8b57"] }
+  ]
+}

@@ -1390,3 +1390,19 @@ html.ic-late .ico.skel { animation: none; background: none; }
 .eye:hover { background: #eaf3ea; color: var(--pri); }
 .eye .ico { margin: 0; }
 .lnk { background: none; border: 0; color: var(--pri); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 4px; }
+
+/* ===== PERFIL DO USUÁRIO: BIO E BOTÃO DE LÁPIS =====
+   Caixa da bio no perfil e botão redondo de edição (ícone de lápis). */
+.bio { background: #f4f8f3; border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; white-space: pre-wrap; line-height: 1.5; }
+.pen { width: 38px; height: 38px; padding: 0 !important; border-radius: 50% !important; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+.pen .ico { margin: 0; }
+
+/* ===== PERFIL: ORIXÁ, FIO DE CONTAS E OPÇÕES ====
+   Bolinhas de cor do Orixá, seletores horizontais (Pai Roberto / Pai Marcos, Sim / Não) e o anel
+   do avatar, que usa as cores do Orixá (duas cores se alternam como um fio de contas, via estilo inline). */
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-left: 5px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.rg { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.rd { display: flex; align-items: center; gap: 6px; margin: 0; padding: 8px 14px; border: 1px solid #d2dcd2; border-radius: 10px; cursor: pointer; font-weight: 600; color: var(--ink); }
+.rd input { width: auto; margin: 0; }
+.rd:has(input:checked) { border-color: var(--pri); background: #eaf3ea; }
+.hav { border-width: 3px; }

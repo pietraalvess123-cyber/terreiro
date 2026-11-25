@@ -183,7 +183,7 @@ const ICON = {
 };
 /** Calcula se a mensalidade do mês do usuário logado está em dia, pendente ou sem cadastro (bolinha verde/vermelha/cinza). */
 function mensStatus() {
-  const m = db.membros.find((x) => x.id == cur.memberId);
+  const m = meuMembro();
   if (!m || m.ativo == "nao")
     return { c: "gray", t: "Sem cadastro de mensalidade" };
   const r = (db.mens[hoje().slice(0, 7)] || {})[m.id];
@@ -191,19 +191,169 @@ function mensStatus() {
     ? { c: "ok", t: "Em dia", r, m }
     : { c: "bad", t: "Pendente", m };
 }
-/** Abre o perfil do usuário logado (ou a tela Minha conta se ainda não houver cadastro). */
-function meuPerfil() {
-  if (cur.memberId) perfil(cur.memberId);
-  else go("conta");
+/** Normaliza um nome (sem acentos, minúsculo) para poder compará-lo com outros nomes. */
+const normNome = (s) =>
+  String(s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+/** Procura o cadastro de filho de santo com o mesmo nome do usuário logado; serve só para mostrar a mensalidade e os afazeres. Não é um vínculo e não dá permissão de editar nada. */
+function meuMembro() {
+  if (!cur) return undefined;
+  const n = normNome(cur.nome);
+  return db.membros.find((m) => normNome(m.nome) == n);
 }
-/** Abre a janela com a situação da mensalidade do mês do usuário logado. */
+/** Abre o perfil do usuário logado (foto, bio e dados pessoais) com o botão de lápis para editar. */
+function meuPerfil() {
+  perfilUsuario();
+}
+/** Lista de Orixás com até 2 cores cada. É lida do arquivo orixas.json; se o navegador não conseguir abri-lo (ex.: ao abrir o app direto do computador), usa esta cópia embutida, igual ao JSON. */
+let ORIXAS = [{nome:"Exu",cores:["#c0392b","#111111"]},{nome:"Ogum",cores:["#1f3a93"]},{nome:"Oxóssi",cores:["#1fa2c8"]},{nome:"Obaluaiê",cores:["#1a1a1a","#ffffff"]},{nome:"Ossain",cores:["#2e8b57","#ffffff"]},{nome:"Oxumarê",cores:["#2e8b57","#f1c40f"]},{nome:"Xangô",cores:["#c0392b","#ffffff"]},{nome:"Logunedé",cores:["#1fa2c8","#f1c40f"]},{nome:"Oyá (Iansã)",cores:["#b3202a","#7b3f00"]},{nome:"Obá",cores:["#b3202a","#f4a6b0"]},{nome:"Ewá",cores:["#e75480","#f1c40f"]},{nome:"Oxum",cores:["#e0a800"]},{nome:"Iemanjá",cores:["#6ec6e8","#ffffff"]},{nome:"Nanã",cores:["#7d3c98","#ffffff"]},{nome:"Oxalá",cores:["#ffffff","#b0bec5"]},{nome:"Ibeji",cores:["#f48fb1","#64b5f6"]},{nome:"Iroko (Tempo)",cores:["#ffffff","#2e8b57"]}];
+fetch("orixas.json")
+  .then((r) => (r.ok ? r.json() : Promise.reject()))
+  .then((j) => {
+    ORIXAS = (j.orixas || j).map((o) => ({ nome: o.nome, cores: (o.cores || []).slice(0, 2) }));
+    if (cur) render();
+  })
+  .catch(() => {});
+/** Retorna as cores (até 2) do Orixá pelo nome, ou nada se não houver. */
+function coresOrixa(nome) {
+  const o = ORIXAS.find((x) => x.nome == nome);
+  return o && o.cores && o.cores.length ? o.cores.slice(0, 2) : null;
+}
+/** Monta o fundo do anel ao redor da foto: uma cor sólida, ou duas cores alternadas como num fio de contas; dourado se não houver Orixá. */
+function ringBg(nome) {
+  const c = coresOrixa(nome);
+  if (!c) return "linear-gradient(var(--gold),var(--gold))";
+  if (c.length == 1) return `linear-gradient(${c[0]},${c[0]})`;
+  return `repeating-conic-gradient(from -7.5deg,${c[0]} 0 15deg,${c[1]} 15deg 30deg)`;
+}
+/** Estilo do círculo de foto do usuário: a foto (ou fundo verde) por dentro e, na borda, o fio de contas com as cores do Orixá. */
+function avStyle(u) {
+  const face = u.foto
+    ? `url(${u.foto}) center/cover no-repeat`
+    : "linear-gradient(145deg,#2e8b57,#14502a)";
+  return `background:${face} padding-box,${ringBg(u.orixa)} border-box;border-color:transparent;`;
+}
+/** Mostra o perfil do usuário logado: foto com o fio de contas, bio, Orixá, categoria (Abiã, Iaô ou Egbomi) e, se iniciado, os dados de iniciação, com o lápis para editar. */
+function perfilUsuario() {
+  const u = cur,
+    r = (l, v) =>
+      v ? `<tr><td class="muted">${l}</td><td>${esc(v)}</td></tr>` : "",
+    ini = u.iniciado == "sim" && u.feitura,
+    cores = coresOrixa(u.orixa);
+  $("#dlg").innerHTML =
+    `<div style="display:flex;justify-content:flex-end"><button class="b g pen" onclick="editPerfilUsuario()" title="Editar dados pessoais" aria-label="Editar dados pessoais">✎</button></div>
+  <div class="av big" style="${avStyle(u)}">${u.foto ? "" : esc((u.nome || "?").trim()[0] || "?").toUpperCase()}</div>
+  <h2 style="text-align:center">${esc(u.nome)}</h2><p style="text-align:center;margin:0 0 6px" class="muted">@${esc(u.u)} · <span class="tag ${isPai() ? "t-ebo" : "t-trab"}">${esc(PAPEL[u.role] || u.role)}</span></p>
+  <p style="text-align:center;margin:0 0 10px"><span class="tag" style="background:var(--pri)">${catMembro({ feitura: u.feitura, iniciado: u.iniciado })}</span>${u.orixa ? ` <span class="tag" style="background:#24402e">${esc(u.orixa)}${cores ? cores.map((c) => `<i class="sw" style="background:${c}"></i>`).join("") : ""}</span>` : ""}</p>
+  <div class="bio">${u.bio ? esc(u.bio) : '<span class="muted">Você ainda não escreveu a sua bio. Clique no lápis para adicionar.</span>'}</div>
+  <table>${r("Orixá", u.orixa)}${ini ? r("Pai de santo", u.pai ? "Pai " + u.pai : "") + r("Odù (iniciação)", fd(u.feitura)) + r("Tempo de santo", tempoSanto(u.feitura)) + r("Orunkó", u.orunko) + r("Mãe pequena", u.maepeq) + r("Pai pequeno", u.paipeq) + r("Padrinho de Orunkó", u.padrinho) + r("Jibonã", u.jibona) : ""}${r("Nascimento", fd(u.nasc))}${r("Telefone", u.tel)}${r("Endereço", u.end)}</table>
+  <div class="row" style="margin-top:12px"><button class="b g" onclick="$('#dlg').close()">Fechar</button></div>`;
+  if (!$("#dlg").open) $("#dlg").showModal();
+}
+/** Formulário dos dados do usuário logado: foto, nome, bio, Orixá (lista), se é iniciado(a) e, só para iniciados (Iaô/Egbomi), Odù, Pai Roberto/Marcos, Orunkó, Mãe/Pai pequeno, Padrinho de Orunkó e Jibonã; depois nascimento, telefone e endereço. */
+function editPerfilUsuario() {
+  const u = cur;
+  let foto = u.foto || "";
+  const rad = (name, opts, val) =>
+      `<div class="rg">${opts.map(([v, l]) => `<label class="rd"><input type="radio" name="${name}" value="${v}" ${val == v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>`,
+    inp = (k, l, t) =>
+      `<label>${l}<input name="${k}" type="${t || "text"}" value="${esc(u[k])}"></label>`;
+  $("#dlg").innerHTML =
+    `<h2>Editar meus dados</h2><form id="pf2"><div style="text-align:center"><div class="av big" id="pfprev"></div><label>Foto de perfil<input type="file" accept="image/*" id="pffoto"></label></div>
+  ${inp("nome", "Nome")}
+  <label>Bio<textarea name="bio" rows="3" maxlength="400" placeholder="Fale um pouco sobre você">${esc(u.bio)}</textarea></label>
+  <label>Orixá<select name="orixa"><option value="">— selecione —</option>${ORIXAS.map((o) => `<option ${u.orixa == o.nome ? "selected" : ""}>${esc(o.nome)}</option>`).join("")}</select></label><div id="ocores" class="muted" style="margin:-4px 0 10px"></div>
+  <label>Você é iniciado(a)?</label>${rad("iniciado", [["sim", "Sim"], ["nao", "Não (Abiã)"]], u.iniciado == "sim" ? "sim" : "nao")}
+  <div id="sIniU">
+    <label>Odù — data completa da iniciação<input name="feitura" type="date" value="${esc(u.feitura)}"></label><p id="hintU" class="muted" style="margin:-4px 0 10px"></p>
+    <label>Pai de santo</label>${rad("pai", [["Roberto", "Pai Roberto"], ["Marcos", "Pai Marcos"]], u.pai)}
+    ${inp("orunko", "Orunkó")}${inp("maepeq", "Mãe pequena")}${inp("paipeq", "Pai pequeno")}${inp("padrinho", "Padrinho de Orunkó")}${inp("jibona", "Jibonã")}
+  </div>
+  ${inp("nasc", "Data de nascimento", "date")}${inp("tel", "Telefone / WhatsApp")}${inp("end", "Endereço")}
+  <div class="row"><button class="b">Salvar</button><button class="b g" type="button" onclick="perfilUsuario()">Cancelar</button></div></form>`;
+  const F = $("#pf2"),
+    prev = () => {
+      const p = $("#pfprev");
+      p.setAttribute("style", avStyle({ foto, orixa: F.orixa.value }));
+      p.textContent = foto ? "" : "📷";
+    },
+    upd = () => {
+      const s = F.iniciado.value == "sim";
+      $("#sIniU").style.display = s ? "" : "none";
+      $("#hintU").textContent = !s
+        ? ""
+        : F.feitura.value
+          ? "Categoria: " + (anosSanto(F.feitura.value) < 7 ? "Iaô (Yawo) — menos de 7 anos de santo" : "Egbomi — 7 anos ou mais de santo")
+          : "Informe a data para definir Iaô (Yawo) ou Egbomi.";
+      const c = coresOrixa(F.orixa.value);
+      $("#ocores").innerHTML = c ? "Cores: " + c.map((x) => `<i class="sw" style="background:${x}"></i>`).join("") : "";
+      prev();
+    };
+  F.orixa.onchange = F.feitura.oninput = upd;
+  F.querySelectorAll("[name=iniciado]").forEach((r) => (r.onchange = upd));
+  upd();
+  $("#pffoto").onchange = (e) => {
+    const fl = e.target.files[0];
+    if (!fl) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = c.height = 240;
+        const s = Math.min(im.width, im.height);
+        c.getContext("2d").drawImage(im, (im.width - s) / 2, (im.height - s) / 2, s, s, 0, 0, 240, 240);
+        foto = c.toDataURL("image/jpeg", 0.8);
+        prev();
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(fl);
+  };
+  F.onsubmit = (e) => {
+    e.preventDefault();
+    const f = new FormData(F),
+      sim = f.get("iniciado") == "sim";
+    if (sim && !f.get("feitura")) {
+      alert("Informe a data completa da iniciação (Odù).");
+      return;
+    }
+    Object.assign(u, {
+      foto,
+      nome: f.get("nome").trim(),
+      bio: f.get("bio").trim(),
+      orixa: f.get("orixa"),
+      iniciado: sim ? "sim" : "nao",
+      nasc: f.get("nasc"),
+      tel: f.get("tel").trim(),
+      end: f.get("end").trim(),
+    });
+    if (sim)
+      Object.assign(u, {
+        feitura: f.get("feitura"),
+        pai: f.get("pai") || "",
+        orunko: f.get("orunko").trim(),
+        maepeq: f.get("maepeq").trim(),
+        paipeq: f.get("paipeq").trim(),
+        padrinho: f.get("padrinho").trim(),
+        jibona: f.get("jibona").trim(),
+      });
+    save();
+    render();
+    perfilUsuario();
+  };
+  if (!$("#dlg").open) $("#dlg").showModal();
+}/** Abre a janela com a situação da mensalidade do mês do usuário logado. */
 function mostraMens() {
   const s = mensStatus(),
     mes = hoje().slice(0, 7);
   $("#dlg").innerHTML =
     `<div style="text-align:center"><div class="sdot ${s.c}" style="width:64px;height:64px;margin:0 auto 12px"></div><h2 style="text-align:center">Mensalidade de ${MESES[+mes.slice(5) - 1]}</h2>
   <p style="font-size:20px;font-weight:700;margin:4px 0" class="${s.c == "ok" ? "ok" : s.c == "bad" ? "bad" : "muted"}">${s.t}</p>
-  ${s.m ? `<p class="muted">Valor: ${brl(s.m.mensalidade || db.cfg.mensalidade)}${s.r ? " · pago em " + fd(s.r.data) : ""}</p>` : '<p class="muted">Sua conta ainda não está ligada ao seu cadastro. Peça ao pai de santo.</p>'}</div>
+  ${s.m ? `<p class="muted">Valor: ${brl(s.m.mensalidade || db.cfg.mensalidade)}${s.r ? " · pago em " + fd(s.r.data) : ""}</p>` : '<p class="muted">Não encontramos uma mensalidade com o seu nome. Fale com o pai de santo.</p>'}</div>
   <div class="row" style="margin-top:14px">${can("mens") ? "<button class=\"b\" onclick=\"$('#dlg').close();go('mens')\">Ver mensalidades</button>" : ""}<button class="b g" onclick="$('#dlg').close()">Fechar</button></div>`;
   $("#dlg").showModal();
 }
@@ -248,10 +398,9 @@ document.addEventListener("click", (e) => {
 });
 /** Atualiza a moldura do app: foto do cabeçalho e barra de atalhos inferior com os avisos (bolinha e contador). */
 function chrome() {
-  const m = db.membros.find((x) => x.id == cur.memberId),
-    av = $("#hav");
-  av.style.backgroundImage = m && m.foto ? `url(${m.foto})` : "";
-  av.textContent = m && m.foto ? "" : (cur.nome.trim()[0] || "?").toUpperCase();
+  const av = $("#hav");
+  av.setAttribute("style", avStyle(cur) + "border-width:3px;");
+  av.textContent = cur.foto ? "" : (cur.nome.trim()[0] || "?").toUpperCase();
   const s = mensStatus(),
     it = [["painel", "🏠", "Início"]];
   if (can("cal")) it.push(["cal", "📅", "Calendário"]);
@@ -439,7 +588,7 @@ function editOduMes(mes) {
 function perfil(id) {
   const m = db.membros.find((x) => x.id == id);
   if (!m) return;
-  if (!can("membros") && !(cur && cur.memberId == id)) {
+  if (!can("membros")) {
     alert("Sem permissão para ver este perfil.");
     return;
   }
@@ -447,7 +596,7 @@ function perfil(id) {
     v ? `<tr><td class="muted">${l}</td><td>${esc(v)}</td></tr>` : "";
   $("#dlg").innerHTML =
     `${avHtml(m, "big")}<h2 style="text-align:center">${esc(m.nome)}</h2><table>${r("Orixá", m.orixa)}${r("Pai de santo", m.pai)}${r("Mãe pequena", m.maepeq)}${r("Pai pequeno", m.paipeq)}${r("Padrinho de Orunkó", m.padrinho)}${r("Jibonã", m.jibona)}${r("Categoria", catMembro(m))}${r("Cargos", (m.cargos || []).join(", "))}${r("Nascimento", fd(m.nasc))}${can("orunko") ? r("Orunkó", m.orunko) : ""}${r("Iniciação", fd(m.feitura))}${r("Tempo de santo", tempoSanto(m.feitura))}${r("Telefone", m.tel)}${r("Endereço", m.end)}${r("Mensalidade", brl(m.mensalidade))}${r("Situação", m.ativo == "nao" ? "Inativo" : "Ativo")}${r("Observações", m.obs)}</table>
-  <div class="row" style="margin-top:12px">${can("membros", "edit") || (cur && cur.memberId == m.id) ? `<button class="b" onclick="$('#dlg').close();editMembro('${m.id}')">✎ Editar perfil</button>` : ""}<button class="b g" onclick="$('#dlg').close()">Fechar</button></div>`;
+  <div class="row" style="margin-top:12px">${can("membros", "edit") ? `<button class="b" onclick="$('#dlg').close();editMembro('${m.id}')">✎ Editar perfil</button>` : ""}<button class="b g" onclick="$('#dlg').close()">Fechar</button></div>`;
   $("#dlg").showModal();
 }
 
@@ -514,7 +663,7 @@ function catCargos(m) {
 /** Formulário de cadastro/edição do filho de santo, com foto, iniciação, cargos e regras de campos restritos. */
 function editMembro(id) {
   const lim = !can("membros", "edit");
-  if (lim && !(cur && id && cur.memberId == id)) {
+  if (lim) {
     alert("Você não tem permissão para alterar cadastros.");
     return;
   }
@@ -1277,6 +1426,18 @@ function migrate() {
     });
     save();
   }
+  if (db.cfg.v5 != 1) {
+    db.cfg.v5 = 1;
+    users().forEach((x) => {
+      const m = db.membros.find((z) => z.id == x.memberId);
+      if (m)
+        ["nasc", "tel", "end", "foto"].forEach((k) => {
+          if (!x[k] && m[k]) x[k] = m[k];
+        });
+      delete x.memberId;
+    });
+    save();
+  }
   if (users().length) return;
   try {
     const a = JSON.parse(ST.get(AK));
@@ -1288,7 +1449,6 @@ function migrate() {
         h: a.h,
         role: "pai",
         status: "ativo",
-        memberId: "",
         perms: clone(PRESETS.pai.p),
       });
       save();
@@ -1356,7 +1516,6 @@ function showLogin(modo, msg) {
         h: await hash(p),
         role: first ? "pai" : "filho",
         status: "ativo",
-        memberId: "",
         perms: clone(PRESETS[first ? "pai" : "filho"].p),
       };
       users().push(n);
@@ -1379,8 +1538,7 @@ function esqueciSenha() {
     if (tentativasRec >= 5)
       return err("Muitas tentativas. Peça ao pai de santo para redefinir sua senha.");
     const x = users().find((y) => y.u == u),
-      m = x && db.membros.find((z) => z.id == x.memberId),
-      nasc = x && (x.nasc || (m && m.nasc));
+      nasc = x && x.nasc;
     if (!x || !nasc || nasc != n) {
       tentativasRec++;
       return err("Usuário ou data de nascimento não conferem. Se a sua conta é antiga e não tem data de nascimento, peça ao pai de santo uma nova senha.");
@@ -1427,8 +1585,7 @@ function unlock(x) {
   $("#login").style.display = "none";
   document.body.classList.remove("locked");
   render();
-  const mm = db.membros.find((z) => z.id == x.memberId);
-  if (!x.nasc && !(mm && mm.nasc)) setTimeout(pedeNasc, 400);
+  if (!x.nasc) setTimeout(pedeNasc, 400);
 }
 /** Encerra a sessão e volta para a tela de entrada. */
 function sair() {
@@ -1721,7 +1878,10 @@ function refInfo(t) {
   return null;
 }
 /** Indica se um afazer foi designado ao usuário logado. */
-const meuAf = (t) => !!cur.memberId && (t.resp || []).includes(cur.memberId);
+const meuAf = (t) => {
+  const m = meuMembro();
+  return !!m && (t.resp || []).includes(m.id);
+};
 /** Indica se o usuário logado pode concluir/marcar itens de um afazer (responsável, pai de santo ou quem tem permissão). */
 const podeAf = (t) => isPai() || can("afazeres", "edit") || meuAf(t);
 /** Lista os afazeres que o usuário logado pode ver (todos, se tiver permissão; senão só os seus). */
@@ -1907,36 +2067,17 @@ const PAPEL = {
   sec: "Secretaria",
   filho: "Filho(a) de santo",
 };
-/** Tela Minha conta: mostra o papel do usuário, as permissões e o acesso ao próprio perfil. */
+/** Tela Minha conta: mostra o papel do usuário, as permissões e o acesso ao próprio perfil, sem depender de vínculo com cadastro. */
 function conta() {
-  const m = db.membros.find((x) => x.id == cur.memberId),
-    L = { none: "Sem acesso", view: "Só visualizar", edit: "Pode editar" };
+  const L = { none: "Sem acesso", view: "Só visualizar", edit: "Pode editar" };
   return `<h2>Minha conta</h2>
-  <div class="card"><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">${m ? avHtml(m, "big") : ""}<div><h3 style="margin:0;font-size:20px">${esc(cur.nome)}</h3><div class="muted">@${esc(cur.u)}</div>
-  <p style="margin:8px 0"><span class="tag ${isPai() ? "t-ebo" : "t-trab"}">${esc(PAPEL[cur.role] || cur.role)}</span></p>
-  ${m ? `<button class="b" onclick="perfil('${m.id}')">Ver meu perfil</button> <button class="b g" onclick="editMembro('${m.id}')">✎ Editar meus dados</button> ` : isPai() ? '<button class="b" onclick="criaMeuCadastro()">Criar meu cadastro de filho(a) de santo</button> ' : '<p class="muted">Seu acesso ainda não está ligado a um cadastro. Peça ao pai de santo.</p>'}
-  <button class="b g" onclick="trocaSenha()">🔑 Trocar senha</button></div></div></div>
+  <div class="card"><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div class="av big" style="margin:0;${avStyle(cur)}">${cur.foto ? "" : esc((cur.nome || "?").trim()[0] || "?").toUpperCase()}</div><div style="flex:1;min-width:200px"><h3 style="margin:0;font-size:20px">${esc(cur.nome)}</h3><div class="muted">@${esc(cur.u)}</div>
+  <p style="margin:8px 0"><span class="tag ${isPai() ? "t-ebo" : "t-trab"}">${esc(PAPEL[cur.role] || cur.role)}</span> <span class="tag" style="background:var(--pri)">${catMembro({ feitura: cur.feitura, iniciado: cur.iniciado })}</span>${cur.orixa ? ` <span class="tag" style="background:#24402e">${esc(cur.orixa)}</span>` : ""}</p>
+  ${cur.bio ? `<div class="bio">${esc(cur.bio)}</div>` : ""}
+  <button class="b" onclick="perfilUsuario()">Ver meu perfil</button> <button class="b g pen" onclick="editPerfilUsuario()" title="Editar dados pessoais" aria-label="Editar dados pessoais">✎</button> <button class="b g" onclick="trocaSenha()">🔑 Trocar senha</button></div></div></div>
   <div class="card"><h3>O que você pode fazer</h3><table><tr><th>Área</th><th>Permissão</th></tr>${MODS.map(([k, t]) => `<tr><td>${t}</td><td>${L[lvl(k)]}</td></tr>`).join("")}${isPai() ? "<tr><td>Usuários e permissões</td><td>Pode editar</td></tr>" : ""}</table>
-  <p class="muted">Todos podem editar os próprios dados pessoais (nome, nascimento, telefone, endereço, foto e observações).</p></div>`;
-}
-/** Cria o cadastro de filho de santo do próprio pai de santo e o liga à sua conta. */
-function criaMeuCadastro() {
-  if (!isPai()) return;
-  const id = uid();
-  db.membros.push({
-    id,
-    nome: cur.nome,
-    ativo: "sim",
-    iniciado: "nao",
-    cargos: ["Pai/Mãe de santo"],
-    mensalidade: db.cfg.mensalidade,
-  });
-  cur.memberId = id;
-  save();
-  render();
-  editMembro(id);
-}
-/** Relaciona funções de edição às áreas de permissão, para esconder botões de quem só pode ver. */
+  <p class="muted">Todos podem editar os próprios dados pessoais no seu perfil (foto, nome, bio, nascimento, telefone e endereço).</p></div>`;
+}/** Relaciona funções de edição às áreas de permissão, para esconder botões de quem só pode ver. */
 const MAPF = {
   editMembro: "membros",
   pagaMens: "mens",
@@ -1958,12 +2099,6 @@ function applyPerms() {
   document.querySelectorAll("#app [onclick]").forEach((e) => {
     const m = (e.getAttribute("onclick") || "").match(/^(\w+)\(/);
     if (!m) return;
-    if (
-      m[1] == "editMembro" &&
-      cur.memberId &&
-      e.getAttribute("onclick").includes("'" + cur.memberId + "'")
-    )
-      return;
     const mod =
       m[1] == "editCat"
         ? (e.getAttribute("onclick").match(/'([^']+)'/) || [])[1]
@@ -1979,7 +2114,7 @@ function applyPerms() {
   });
   document.querySelectorAll('#app a[onclick^="perfil"]').forEach((a) => {
     const id = (a.getAttribute("onclick").match(/'([^']+)'/) || [])[1];
-    if (!can("membros") && !(cur.memberId && cur.memberId == id)) {
+    if (!can("membros")) {
       const s = document.createElement("span");
       s.innerHTML = a.innerHTML;
       a.replaceWith(s);
@@ -1993,15 +2128,10 @@ function applyPerms() {
           h.parentElement.remove();
       });
     }
-    if (!isPai() && !cur.memberId)
-      $("#app").insertAdjacentHTML(
-        "afterbegin",
-        '<div class="card muted">Seu acesso ainda não está ligado ao seu cadastro de filho(a) de santo. Peça ao pai de santo para vincular, e então você poderá ver e editar o seu perfil.</div>',
-      );
   }
 }
 /* ---------- Usuários (somente pai de santo) ---------- */
-/** Tela Usuários (só pai de santo): aprova contas, define perfil, vínculo e situação de cada usuário. */
+/** Tela Usuários (só pai de santo): bloqueia contas, define o perfil e a situação de cada usuário. */
 function usuarios() {
   const l = users()
     .slice()
@@ -2010,9 +2140,8 @@ function usuarios() {
         (a.status == "pendente" ? 0 : 1) - (b.status == "pendente" ? 0 : 1) ||
         a.nome.localeCompare(b.nome),
     );
-  const memb = db.membros.slice().sort((a, b) => a.nome.localeCompare(b.nome));
-  return `<h2>Usuários e Permissões</h2><p class="muted">Aprove quem criou conta, escolha o perfil, ligue ao cadastro e ajuste o que cada pessoa pode ver ou editar.</p>
-  <div class="card" style="overflow:auto"><table><tr><th>Pessoa</th><th>Perfil</th><th>Cadastro vinculado</th><th>Situação</th><th></th></tr>
+  return `<h2>Usuários e Permissões</h2><p class="muted">Aprove quem criou conta, escolha o perfil e ajuste o que cada pessoa pode ver ou editar.</p>
+  <div class="card" style="overflow:auto"><table><tr><th>Pessoa</th><th>Perfil</th><th>Situação</th><th></th></tr>
   ${l
     .map((x) => {
       const me = x.id == cur.id;
@@ -2025,7 +2154,6 @@ function usuarios() {
         `<option value="${k}" ${x.role == k ? "selected" : ""}>${v.nome}</option>`,
     )
     .join("")}</select></td>
-  <td><select onchange="setUser('${x.id}','memberId',this.value)"><option value="">— nenhum —</option>${memb.map((m) => `<option value="${m.id}" ${x.memberId == m.id ? "selected" : ""}>${esc(m.nome)}</option>`).join("")}</select></td>
   <td><select ${me ? "disabled" : ""} onchange="setUser('${x.id}','status',this.value)">${[
     ["pendente", "Aguardando aprovação"],
     ["ativo", "Ativo"],
@@ -2042,7 +2170,7 @@ function usuarios() {
 }
 /** Encontra um usuário pelo id. */
 const uById = (id) => users().find((y) => y.id == id);
-/** Altera um campo de um usuário (vínculo ou situação) e redesenha. */
+/** Altera um campo de um usuário (situação) e redesenha. */
 function setUser(id, k, v) {
   uById(id)[k] = v;
   save();

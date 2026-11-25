@@ -708,7 +708,7 @@ h3 {
   justify-content: center;
 }
 .card.stat::before {
-  content: "📋";
+  content: "";
   position: absolute;
   left: 16px;
   top: 50%;
@@ -721,18 +721,6 @@ h3 {
   align-items: center;
   justify-content: center;
   font-size: 21px;
-}
-.grid > .card.stat:nth-child(1)::before {
-  content: "👥";
-}
-.grid > .card.stat:nth-child(2)::before {
-  content: "🧾";
-}
-.grid > .card.stat:nth-child(3)::before {
-  content: "💰";
-}
-.grid > .card.stat:nth-child(4)::before {
-  content: "🎁";
 }
 .stat b {
   font-size: 27px;
@@ -1347,3 +1335,58 @@ ul.chk {
     transition: none !important;
   }
 }
+
+/* ===== ÍCONES (LUCIDE) =====
+   Estilo dos ícones em SVG que substituem os emojis: tamanho proporcional ao texto, cor herdada
+   e o "esqueleto" (skeleton) cinza animado exibido por no máximo 200 ms enquanto o ícone não carrega. */
+.ico {
+  display: inline-flex;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  margin-right: 0.25em;
+  flex: none;
+}
+.ico svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ic .ico, .hav .ico, .dots .ico, .sico .ico { margin: 0; }
+.dots .ico { width: 1.3em; height: 1.3em; }
+.ico.skel {
+  border-radius: 5px;
+  background: linear-gradient(90deg, rgba(150,170,155,.25) 25%, rgba(150,170,155,.5) 50%, rgba(150,170,155,.25) 75%);
+  background-size: 200% 100%;
+  animation: skel 1s linear infinite;
+}
+html.ic-late .ico.skel { animation: none; background: none; }
+@keyframes skel { to { background-position: -200% 0; } }
+/* Ícone dentro dos quadros de números do Painel */
+.sico {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--pri); z-index: 1;
+}
+.sico .ico { width: 1em; height: 1em; }
+@media (max-width: 640px) { .sico { left: 12px; width: 38px; height: 38px; font-size: 19px; } }
+/* Evita que a regra de texto dos quadros de números (.stat span) encolha ou desbote o ícone */
+.stat .sico .ico { font-size: 22px; color: var(--pri); letter-spacing: 0; text-transform: none; width: 1em; height: 1em; }
+@media (max-width: 640px) { .stat .sico .ico { font-size: 19px; } }
+
+/* ===== SENHA: OLHO E "ESQUECI MINHA SENHA" =====
+   Campo de senha com botão de olho (mostrar/ocultar) e o link-botão "Esqueci minha senha". */
+.pw { position: relative; margin-top: 4px; }
+.pw input { padding-right: 46px; margin-top: 0; }
+.eye {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border: 0; background: none; border-radius: 8px;
+  color: var(--mut); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.eye:hover { background: #eaf3ea; color: var(--pri); }
+.eye .ico { margin: 0; }
+.lnk { background: none; border: 0; color: var(--pri); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 4px; }

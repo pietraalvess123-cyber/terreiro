@@ -3,6 +3,25 @@
  * Toda a lógica do app: dados (localStorage), login e permissões, telas e formulários.
  * Carregado pelo index.html. Não depende de bibliotecas externas (JavaScript puro).
  */
+/* ---------- Ícones (Lucide) ---------- */
+/** Tabela que relaciona cada emoji usado nos textos ao ícone Lucide equivalente (definido em icons.js). */
+const EMOJI_ICON={'🏠':'house','📅':'calendar-days','👥':'users','💰':'coins','🎁':'gift','📊':'chart-column','📖':'book-open','🖼':'image','🧺':'shopping-basket','🥥':'nut','🌿':'leaf','📋':'clipboard-list','✅':'circle-check','🔑':'key-round','👤':'user','⏻':'power','⋮':'ellipsis-vertical','✔':'check','🎉':'party-popper','🎂':'cake','🔮':'sparkles','🧾':'receipt','📷':'camera','📁':'folder','🖨':'printer','⬆':'upload','⬇':'download','✎':'pencil','◀':'chevron-left','▶':'chevron-right'};
+const EMOJI_SRC='('+Object.keys(EMOJI_ICON).join('|')+')\\uFE0F?',EMOJI_RE=new RegExp(EMOJI_SRC,'g'),EMOJI_TEST=new RegExp(EMOJI_SRC),ICO_SKIP=/^(SCRIPT|STYLE|TEXTAREA|OPTION|TITLE)$/;
+/** Preenche um espaço de ícone com o SVG correspondente, se o arquivo icons.js já tiver chegado; remove o esqueleto. */
+function icoFill(el){const p=window.ICONS&&ICONS[el.dataset.n];if(!p||el.dataset.f)return;el.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>';el.classList.remove('skel');el.dataset.f=1}
+/** Chamada quando o icons.js termina de carregar: troca todos os esqueletos pendentes pelos ícones. */
+function iconsReady(){document.querySelectorAll('.ico[data-n]').forEach(icoFill)}
+/** Troca os emojis de um texto por ícones (com esqueleto até o SVG estar disponível). */
+function swapText(t){const s=t.nodeValue,f=document.createDocumentFragment();let last=0,m;EMOJI_RE.lastIndex=0;
+  while((m=EMOJI_RE.exec(s))){if(m.index>last)f.append(s.slice(last,m.index));const sp=document.createElement('span');sp.className='ico skel';sp.dataset.n=EMOJI_ICON[m[1]];sp.setAttribute('aria-hidden','true');icoFill(sp);f.append(sp);last=m.index+m[0].length}
+  if(last<s.length)f.append(s.slice(last));t.replaceWith(f)}
+/** Percorre um trecho da página e troca todos os emojis encontrados por ícones. */
+function iconize(root){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),a=[];let n;while((n=w.nextNode()))if(!ICO_SKIP.test(n.parentNode.nodeName)&&EMOJI_TEST.test(n.nodeValue))a.push(n);a.forEach(swapText)}
+/** Observa a página: todo conteúdo novo (telas, janelas, menus) tem seus emojis trocados por ícones automaticamente. */
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(a=>{if(a.nodeType==3){if(a.parentNode&&!ICO_SKIP.test(a.parentNode.nodeName)&&EMOJI_TEST.test(a.nodeValue))swapText(a)}else if(a.nodeType==1&&!a.classList.contains('ico'))iconize(a)}))).observe(document.body,{childList:true,subtree:true});
+iconize(document.body);
+/** Após 200 ms o esqueleto para de animar (evita efeito ruim se o arquivo de ícones demorar). */
+setTimeout(()=>document.documentElement.classList.add('ic-late'),200);
 /** Atalho para document.querySelector: seleciona um elemento da página pelo seletor CSS. */
 const $ = (s) => document.querySelector(s);
 /** Gera um identificador aleatório curto, usado como id de cada registro (membro, cota, evento etc.). */
@@ -344,10 +363,10 @@ function painel() {
   const pend = ativos.filter((m) => !reg[m.id]?.pago);
   return `<h2>Painel — ${MESES[+mes.slice(5) - 1]}/${mes.slice(0, 4)}</h2>
   <div class="grid">
-   <div class="card stat"><b>${ativos.length}</b><span>Filhos de santo ativos</span></div>
-   <div class="card stat"><b>${pagos.length}/${ativos.length}</b><span>Mensalidades pagas no mês</span></div>
-   <div class="card stat"><b>${brl(rec)}</b><span>Recebido no mês</span></div>
-   <div class="card stat"><b>${db.cotas.length}</b><span>Cotas extras cadastradas</span></div>
+   <div class="card stat"><i class="sico">👥</i><b>${ativos.length}</b><span>Filhos de santo ativos</span></div>
+   <div class="card stat"><i class="sico">🧾</i><b>${pagos.length}/${ativos.length}</b><span>Mensalidades pagas no mês</span></div>
+   <div class="card stat"><i class="sico">💰</i><b>${brl(rec)}</b><span>Recebido no mês</span></div>
+   <div class="card stat"><i class="sico">🎁</i><b>${db.cotas.length}</b><span>Cotas extras cadastradas</span></div>
   </div>
   <div class="grid">
    <div class="card"><h3>Próximos compromissos</h3>${prox.length ? prox.map((e) => `<p><span class="tag ${TIPOS[e.tipo][1]}">${TIPOS[e.tipo][0]}</span> <b>${fd(e.data)}</b> ${esc(e.hora)} — ${esc(e.titulo)}</p>`).join("") : '<p class="muted">Nada agendado.</p>'}</div>
@@ -1187,14 +1206,8 @@ const PRESETS = {
   filho: {
     nome: "Filho(a) de santo",
     p: {
-      membros: "view",
-      mens: "view",
-      cotas: "view",
-      contas: "none",
-      cal: "view",
-      agenda: "view",
-      galeria: "view",
-      orunko: "none",
+      membros: "none", mens: "none", cotas: "none", contas: "none",
+      cal: "none", agenda: "none", galeria: "none", orunko: "none",
     },
   },
 };
@@ -1254,6 +1267,16 @@ function migrate() {
     });
     save();
   }
+  if (db.cfg.v4 != 1) {
+    db.cfg.v4 = 1;
+    users().forEach((x) => {
+      if (x.status == "pendente") {
+        x.status = "ativo";
+        x.perms = clone(PRESETS.filho.p);
+      }
+    });
+    save();
+  }
   if (users().length) return;
   try {
     const a = JSON.parse(ST.get(AK));
@@ -1272,22 +1295,40 @@ function migrate() {
     }
   } catch (e) {}
 }
-/** Mostra a tela de entrada ou de criação de conta e trata o envio do formulário. */
+/** Gera um campo de senha com o botão de olho para mostrar ou ocultar o que foi digitado. */
+function pwField(label, name, ac, min) {
+  return `<label>${label}<div class="pw"><input name="${name}" type="password" autocomplete="${ac}" required minlength="${min}"><button type="button" class="eye" onclick="togglePw(this)" title="Mostrar senha" aria-label="Mostrar senha"><span class="ico skel" data-n="eye"></span></button></div></label>`;
+}
+/** Alterna um campo de senha entre oculto e visível, trocando o ícone (olho / olho riscado). */
+function togglePw(btn) {
+  const i = btn.parentNode.querySelector("input"),
+    sp = btn.firstElementChild,
+    show = i.type == "password";
+  i.type = show ? "text" : "password";
+  sp.dataset.n = show ? "eye-off" : "eye";
+  delete sp.dataset.f;
+  sp.classList.add("skel");
+  icoFill(sp);
+  const t = show ? "Ocultar senha" : "Mostrar senha";
+  btn.title = t;
+  btn.setAttribute("aria-label", t);
+}
+/** Mostra a tela de entrada ou de criação de conta e trata o envio do formulário. A conta nova entra direto, sem aprovação e sem nenhuma permissão. */
 function showLogin(modo, msg) {
   const first = !users().length;
   modo = first ? "novo" : modo || "entrar";
   document.body.classList.add("locked");
   cur = null;
-  const memb = db.membros
-    .filter((m) => m.ativo != "nao")
-    .sort((a, b) => a.nome.localeCompare(b.nome));
-  $("#login").innerHTML =
-    `<div class="lbox"><div class="logo" style="margin:0 auto 6px;width:120px;height:120px"></div><h2 style="text-align:center">Ilê Asé Tonin Ewe Oya</h2>
+  $("#login").innerHTML = `<div class="lbox"><div class="logo" style="margin:0 auto 6px;width:120px;height:120px"></div><h2 style="text-align:center">Ilê Asé Tonin Ewe Oya</h2>
   ${first ? '<p class="muted" style="text-align:center">Primeiro acesso: crie o acesso do Pai/Mãe de santo (administrador)</p>' : `<div class="tools" style="justify-content:center"><button class="b ${modo == "entrar" ? "" : "g"}" type="button" onclick="showLogin('entrar')">Entrar</button><button class="b ${modo == "novo" ? "" : "g"}" type="button" onclick="showLogin('novo')">Criar conta</button></div>`}
-  <form id="lf">${modo == "novo" ? '<label>Nome completo<input name="nome" required></label>' : ""}<label>Usuário<input name="u" autocomplete="username" required></label><label>Senha<input name="p" type="password" autocomplete="${modo == "novo" ? "new-password" : "current-password"}" required minlength="${modo == "novo" ? 4 : 1}"></label>
-  ${modo == "novo" ? `<label>Repita a senha<input name="p2" type="password" required></label>${first ? "" : `<label>Quem é você no cadastro da casa?<select name="mid"><option value="">Ainda não estou cadastrado(a)</option>${memb.map((m) => `<option value="${m.id}">${esc(m.nome)}</option>`).join("")}</select></label><p class="muted">Sua conta será liberada depois que o pai de santo aprovar.</p>`}` : ""}
-  <p id="lerr" class="${msg ? "ok" : "bad"}" style="min-height:18px;margin:0 0 8px">${esc(msg || "")}</p><button class="b" style="width:100%">${modo == "entrar" ? "Entrar" : first ? "Criar acesso" : "Criar conta"}</button></form></div>`;
+  <form id="lf">${modo == "novo" ? '<label>Nome completo<input name="nome" required></label>' : ""}<label>Usuário<input name="u" autocomplete="username" required></label>
+  ${modo == "novo" ? '<label>Data de nascimento<input name="nasc" type="date" required></label><p class="muted" style="margin:-4px 0 10px">Usada para recuperar a senha caso você esqueça.</p>' : ""}
+  ${pwField("Senha", "p", modo == "novo" ? "new-password" : "current-password", modo == "novo" ? 4 : 1)}
+  ${modo == "novo" ? pwField("Repita a senha", "p2", "new-password", 4) : ""}
+  <p id="lerr" class="${msg ? "ok" : "bad"}" style="min-height:18px;margin:0 0 8px">${esc(msg || "")}</p><button class="b" style="width:100%">${modo == "entrar" ? "Entrar" : first ? "Criar acesso" : "Criar conta"}</button>
+  ${modo == "entrar" ? '<p style="text-align:center;margin:12px 0 0"><button type="button" class="lnk" onclick="esqueciSenha()">Esqueci minha senha</button></p>' : ""}</form></div>`;
   $("#login").style.display = "flex";
+  iconsReady();
   $("#lf").onsubmit = async (e) => {
     e.preventDefault();
     const f = new FormData($("#lf")),
@@ -1301,8 +1342,6 @@ function showLogin(modo, msg) {
       const x = users().find((y) => y.u == u);
       if (!x || (await hash(p)) != x.h)
         return err("Usuário ou senha incorretos.");
-      if (x.status == "pendente")
-        return err("Seu acesso ainda não foi aprovado pelo pai de santo.");
       if (x.status == "bloqueado")
         return err("Acesso bloqueado. Fale com o pai de santo.");
       unlock(x);
@@ -1313,24 +1352,72 @@ function showLogin(modo, msg) {
         id: uid(),
         nome: f.get("nome").trim(),
         u,
+        nasc: f.get("nasc"),
         h: await hash(p),
         role: first ? "pai" : "filho",
-        status: first ? "ativo" : "pendente",
-        memberId: f.get("mid") || "",
+        status: "ativo",
+        memberId: "",
         perms: clone(PRESETS[first ? "pai" : "filho"].p),
       };
       users().push(n);
       save();
-      if (first) unlock(n);
-      else
-        showLogin(
-          "entrar",
-          "Conta criada! Aguarde o pai de santo aprovar o seu acesso.",
-        );
+      unlock(n);
     }
   };
 }
-/** Conclui o login: define o usuário atual, libera o app e abre o Painel. */
+/** Tentativas erradas de recuperação de senha nesta sessão (limite contra adivinhação da data). */
+let tentativasRec = 0;
+/** Abre a janela "Esqueci minha senha": confirma usuário e data de nascimento e, se conferir, libera a troca da senha. */
+function esqueciSenha() {
+  $("#dlg").innerHTML = `<h2>Esqueci minha senha</h2><p class="muted">Confirme o seu usuário e a sua data de nascimento.</p><form id="rf"><label>Usuário<input name="u" required autocomplete="username"></label><label>Data de nascimento<input name="n" type="date" required></label><p id="rerr" class="bad" style="min-height:18px;margin:0 0 8px"></p><div class="row"><button class="b">Confirmar</button><button class="b g" type="button" onclick="$('#dlg').close()">Cancelar</button></div></form>`;
+  $("#rf").onsubmit = async (e) => {
+    e.preventDefault();
+    const err = (t) => ($("#rerr").textContent = t),
+      f = new FormData($("#rf")),
+      u = f.get("u").trim().toLowerCase(),
+      n = f.get("n");
+    if (tentativasRec >= 5)
+      return err("Muitas tentativas. Peça ao pai de santo para redefinir sua senha.");
+    const x = users().find((y) => y.u == u),
+      m = x && db.membros.find((z) => z.id == x.memberId),
+      nasc = x && (x.nasc || (m && m.nasc));
+    if (!x || !nasc || nasc != n) {
+      tentativasRec++;
+      return err("Usuário ou data de nascimento não conferem. Se a sua conta é antiga e não tem data de nascimento, peça ao pai de santo uma nova senha.");
+    }
+    if (x.status == "bloqueado")
+      return err("Acesso bloqueado. Fale com o pai de santo.");
+    novaSenhaModal(x);
+  };
+  $("#dlg").showModal();
+}
+/** Segunda etapa da recuperação: define a nova senha (com repetição para confirmar) do usuário já confirmado. */
+function novaSenhaModal(x) {
+  $("#dlg").innerHTML = `<h2>Nova senha</h2><p class="muted">Olá, ${esc(x.nome)}. Crie a sua nova senha.</p><form id="nf">${pwField("Nova senha", "p", "new-password", 4)}${pwField("Repita a nova senha", "p2", "new-password", 4)}<p id="rerr" class="bad" style="min-height:18px;margin:0 0 8px"></p><div class="row"><button class="b">Salvar nova senha</button><button class="b g" type="button" onclick="$('#dlg').close()">Cancelar</button></div></form>`;
+  iconsReady();
+  $("#nf").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData($("#nf"));
+    if (f.get("p") != f.get("p2"))
+      return ($("#rerr").textContent = "As senhas não conferem.");
+    x.h = await hash(f.get("p"));
+    save();
+    $("#dlg").close();
+    showLogin("entrar", "Senha alterada! Entre com a nova senha.");
+  };
+}
+/** Pede a data de nascimento a quem ainda não tem uma cadastrada (contas antigas), para que possa recuperar a senha. */
+function pedeNasc() {
+  if (!cur || cur.nasc) return;
+  $("#dlg").innerHTML = `<h2>Data de nascimento</h2><p class="muted">Cadastre a sua data de nascimento. Ela será usada para recuperar a senha, caso você esqueça.</p><form id="df"><label>Data de nascimento<input name="n" type="date" required></label><div class="row"><button class="b">Salvar</button><button class="b g" type="button" onclick="$('#dlg').close()">Agora não</button></div></form>`;
+  $("#df").onsubmit = (e) => {
+    e.preventDefault();
+    cur.nasc = new FormData($("#df")).get("n");
+    save();
+    $("#dlg").close();
+  };
+  $("#dlg").showModal();
+}/** Conclui o login: define o usuário atual, libera o app e abre o Painel. */
 function unlock(x) {
   cur = x;
   view = "painel";
@@ -1340,9 +1427,12 @@ function unlock(x) {
   $("#login").style.display = "none";
   document.body.classList.remove("locked");
   render();
+  const mm = db.membros.find((z) => z.id == x.memberId);
+  if (!x.nasc && !(mm && mm.nasc)) setTimeout(pedeNasc, 400);
 }
 /** Encerra a sessão e volta para a tela de entrada. */
 function sair() {
+  if ($("#dlg").open) $("#dlg").close();
   try {
     sessionStorage.removeItem("terreiro_ok");
   } catch (e) {}
